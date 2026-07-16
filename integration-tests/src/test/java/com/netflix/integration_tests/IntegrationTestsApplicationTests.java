@@ -1,10 +1,10 @@
-package com.netflix.movie_service;
+package com.netflix.integration_tests;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MovieServiceApplicationTests {
+class IntegrationTestsApplicationTests {
 
 	@Test
 	void contextLoads() {

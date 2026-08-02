@@ -21,9 +21,8 @@
 	<modules>
 		<module>movie-service</module>
 		<module>video-service</module>
-<!--		<module>encoding-service</module>-->
-<!--		<module>streaming-service</module>-->
-<!--		<module>api-gateway</module>-->
+		<module>encoding-service</module>
+		<module>streaming-service</module>
 	   	<module>common-lib</module>
 	</modules>
 	

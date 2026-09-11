@@ -5,7 +5,6 @@ import com.netflix.common_lib.dto.exception.CommonException;
 import com.netflix.common_lib.utils.KafkaTopics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class VideoService {
+public class VideoUploadEventConsumer {
     private final EncodingService encodingService;
 
     @KafkaListener(topics = {KafkaTopics.VIDEO_UPLOAD_TOPIC}, groupId = "${spring.kafka.consumer.group}")

@@ -23,21 +23,24 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /*****************************
+jobDir=C:/temp/encoding/abc123/
 
 C:/temp/encoding/abc123/
 │
-├── raw.mp4
-├── master.m3u8
-├── 1080p/
-│   ├── playlist.m3u8
-│   ├── segment_000.ts
-│   └── segment_001.ts
+├── raw_video.mp4
 │
-├── 720p/
-│   ├── playlist.m3u8
-│   ├── segment_000.ts
-│   └── segment_001.ts
-│
+└── encoded/
+     ├── master.m3u8
+     │
+     ├── 1080p/
+     │   ├── playlist.m3u8
+     │   ├── segment_000.ts
+     │   └── segment_001.ts
+     │
+     └── 720p/
+         ├── playlist.m3u8
+         ├── segment_000.ts
+         └── segment_001.ts
 ...
 ******************************/
 
@@ -76,6 +79,10 @@ public class EncodingService {
                 Files.createDirectories(Paths.get(qualityDir));
                 encodeToHls(rawVideoFilePath, qualityDir, videoQuality);
             }
+
+            // generate master playlist
+            String masterPlaylistPath = jobDir + "/encoded/master.m3u8";
+            filesAndDirectoryService.generateMasterPlaylist(masterPlaylistPath);
 
             // Upload all encoded files to S3
             String prefix = "encoded/" + videoUploadEvent.getMovieId() + "/";

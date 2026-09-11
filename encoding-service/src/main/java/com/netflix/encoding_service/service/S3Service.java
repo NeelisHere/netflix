@@ -54,10 +54,15 @@ public class S3Service {
             if (currentPath.isDirectory()) {
                 uploadDirectoryRecursivelyToS3(currentPath, localDir, prefix);
             } else {
+                /*
+                * C:\temp\encoding\abc123\encoded\1080p\playlist.m3u8 -> 1080p/playlist.m3u8
+                * */
                 String relativePath = currentPath.getAbsolutePath()
                         .substring(localDir.length() + 1)
                         .replace("\\", "/");
-
+                /*
+                * 1080p/playlist.m3u8 -> encoded/movie123/1080p/playlist.m3u8
+                * */
                 String s3Key = prefix + relativePath;
                 String contentType = currentPath.getName().endsWith(".m3u8")
                         ? "application/x-mpegURL"

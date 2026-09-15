@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EncodingServiceTests {
-    public static final String VALID_MOVIE_ID = "0fb8421a-388b-40b3-8a59-d9b9723c60e6";
+    public static final String VALID_MOVIE_ID = "a2cad1c1-68aa-43e9-bb64-152dada4c0d6";
     public static final String S3_BUCKET_NAME = "netflix-streaming-videos-440744257191-us-east-1-an";
 
     @Test

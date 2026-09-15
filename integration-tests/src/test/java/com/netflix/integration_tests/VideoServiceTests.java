@@ -14,7 +14,7 @@ import static org.hamcrest.Matchers.*;
 public class VideoServiceTests {
     public static final String SMALL_VIDEO_FILE = "test_file_3mb.mp4";
     public static final String LARGE_VIDEO_FILE = "test_file_8.5mb.mp4";
-    public static final String VALID_MOVIE_ID = "a2cad1c1-68aa-43e9-bb64-152dada4c0d6";
+    public static final String VALID_MOVIE_ID = "cbfc6799-12aa-4090-9d2a-dd1bea6e28ab";
 
     @BeforeAll
     static void setUp() {

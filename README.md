@@ -6,30 +6,7 @@ A microservices-based video streaming backend built with Spring Boot. Handles mo
 
 ## Architecture
 
-```
-                                          ┌─────────────────┐
-                                          │   encoding-     │ ──► AWS S3
-                          video.upload    │   service       │     (encoded HLS)
-                        ┌──────────────►  │   :8083         │
-                        │                 └────────┬────────┘
-                        │                          │ video.encode
-  User ──► API Gateway  │                          ▼
-          (load         │  ┌─────────────┐   ┌─────────────┐
-          balancer)  ───┼─►│movie-service│◄──│ video.encode│
-                        │  │  :8081      │   │  (Kafka)    │
-                        │  └─────────────┘   └─────────────┘
-                        │         │ PostgreSQL (Neon)
-                        │
-                        │  ┌──────────────┐
-                        ├─►│video-service │ ──► AWS S3 (raw upload)
-                        │  │  :8082       │ ──► video.upload (Kafka)
-                        │  └──────────────┘
-                        │
-                        │  ┌──────────────────┐
-                        └─►│streaming-service │ ──► AWS S3 (pre-signed URLs)
-                           │  :8084           │ ──► Redis (URL cache)
-                           └──────────────────┘
-```
+<img width="1266" height="701" alt="Screenshot 2026-09-14 110401" src="https://github.com/user-attachments/assets/c80e05fb-1e7a-4a87-bcb2-a7262325267e" />
 
 ---
 

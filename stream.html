@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stream</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <input id="movieId" type="text" placeholder="Movie ID (UUID)">
+    <button id="playBtn" onclick="loadMovie()">▶ Play</button>
+    <p id="status"></p>
+    <video id="video" controls width="720"></video>
+
+    <script>
+        function loadMovie() {
+            var movieId = document.getElementById('movieId').value.trim();
+            var playBtn = document.getElementById('playBtn');
+
+            if (!movieId) {
+                document.getElementById('status').textContent = 'Please enter a Movie ID';
+                return;
+            }
+
+            playBtn.disabled = true;
+            playBtn.textContent = '⏳ Loading...';
+            document.getElementById('status').textContent = 'Fetching stream...';
+
+            fetch('http://localhost:8084/api/v1/streaming/' + movieId)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Movie not found or not ready for streaming');
+                    return response.json();
+                })
+                .then(function (data) {
+                    document.getElementById('status').textContent =
+                        'Stream loaded! Quality: ' + data.quality + ' | Expires in: ' + data.expiresInMinutes + ' min';
+                    playHLS(data.StreamingUrl, movieId);
+                    playBtn.disabled = false;
+                    playBtn.textContent = '▶ Play';
+                })
+                .catch(function (error) {
+                    document.getElementById('status').textContent = '❌ ' + error.message;
+                    playBtn.disabled = false;
+                    playBtn.textContent = '▶ Play';
+                });
+        }
+
+        function playHLS(streamUrl, movieId) {
+            var video = document.getElementById('video');
+
+            if (Hls.isSupported()) {
+                var hls = new Hls({
+                    xhrSetup: function (xhr, url) {
+                        if (url.includes('.m3u8') && url.includes('X-Amz')) {
+                            var s3Path = url.split('.amazonaws.com/')[1].split('?')[0];
+                            var encodedPath = encodeURIComponent(s3Path);
+                            xhr.open('GET',
+                                'http://localhost:8084/api/v1/streaming/' +
+                                movieId + '/playlist?path=' + encodedPath
+                            );
+                        }
+                    }
+                });
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function () { video.play(); });
+            }
+        }
+    </script>
+</body>
+</html>

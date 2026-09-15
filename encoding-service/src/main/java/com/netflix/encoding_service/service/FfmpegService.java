@@ -39,7 +39,8 @@ public class FfmpegService {
         StringBuilder master = new StringBuilder("#EXTM3U\n#EXT-X-VERSION:3\n\n");
         for (VideoQuality videoQuality : VideoUtils.VIDEO_QUALITIES) {
             String s = String.format(
-                    "#EXT-X-STREAM-INF:BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.42e01e,mp4a.40.2\"%dp/playlist.m3u8\n\n",
+//                    "#EXT-X-STREAM-INF:BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.42e01e,mp4a.40.2\"%dp/playlist.m3u8\n\n",
+                    "#EXT-X-STREAM-INF:BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.42e01e,mp4a.40.2\"\n%dp/playlist.m3u8\n",
                     videoQuality.bitrate() * 1000, videoQuality.width(), videoQuality.height(), videoQuality.height()
             );
             master.append(s);

@@ -1,11 +1,9 @@
-FROM jrottenberg/ffmpeg:7.1-ubuntu2404 AS ffmpeg-stage
-
 FROM eclipse-temurin:21-jre
 
-COPY --from=ffmpeg-stage /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=ffmpeg-stage /usr/local/lib /usr/local/lib
-
-RUN ldconfig
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

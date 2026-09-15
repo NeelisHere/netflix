@@ -62,10 +62,9 @@ services:
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_REGION: ${AWS_REGION}
       AWS_BUCKET_NAME: ${AWS_BUCKET_NAME}
-      FFMPEG_PATH: /ffmpeg/bin/ffmpeg.exe
+      FFMPEG_PATH: /usr/local/bin/ffmpeg
       TEMP_DIR: /temp_files/encoding
     volumes:
-      - C:/Users/NeelabhPaul/Desktop/ffmpeg/bin/ffmpeg.exe:/ffmpeg/bin/ffmpeg.exe:ro
       - encoding-temp:/temp_files/encoding
     depends_on:
       - kafka

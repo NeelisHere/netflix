@@ -1,4 +1,8 @@
+FROM linuxserver/ffmpeg:latest AS ffmpeg-stage
+
 FROM eclipse-temurin:21-jre
+
+COPY --from=ffmpeg-stage /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
 WORKDIR /app
 

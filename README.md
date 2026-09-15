@@ -270,3 +270,68 @@ netflix/
 └── .github/
     └── workflows/           # Per-service CI pipelines
 ```
+
+---
+
+## Deployment — AWS EC2
+
+The full stack is deployed on a single AWS EC2 instance using Docker Compose, with all service ports exposed via the instance's static public IP.
+
+### Instance setup
+
+```bash
+# Install Docker
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-plugin
+
+# Add current user to docker group (avoid sudo on every command)
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### Pull and run
+
+```bash
+# Clone the repo
+git clone https://github.com/NeelisHere/netflix.git
+cd netflix/infrastructure
+
+# Create the .env file with secrets
+nano .env   # fill in POSTGRES_*, AWS_* values
+
+# Pull latest images from GHCR and start all services
+docker compose --env-file .env pull
+docker compose --env-file .env up -d
+```
+
+### EC2 Security Group — inbound rules
+
+The following ports must be open in the EC2 Security Group to allow external access:
+
+| Port | Service |
+|------|---------|
+| 8081 | movie-service |
+| 8082 | video-service |
+| 8083 | encoding-service |
+| 8084 | streaming-service |
+
+### Accessing the services
+
+Once running, all services are reachable at the instance's static public IP:
+
+```
+http://<EC2_PUBLIC_IP>:8081/api/v1/movies
+http://<EC2_PUBLIC_IP>:8082/api/v1/video/upload/{movieId}
+http://<EC2_PUBLIC_IP>:8083  (internal — encoding triggered via Kafka)
+http://<EC2_PUBLIC_IP>:8084/api/v1/streaming/{movieId}
+```
+
+### Updating to the latest images
+
+After a new push to `main` triggers the CI pipeline and fresh images are pushed to GHCR:
+
+```bash
+cd netflix/infrastructure
+docker compose --env-file .env pull
+docker compose --env-file .env up -d
+```

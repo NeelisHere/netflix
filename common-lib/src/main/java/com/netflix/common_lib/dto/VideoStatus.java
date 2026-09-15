@@ -3,7 +3,7 @@ package com.netflix.common_lib.dto;
 public enum VideoStatus {
     PENDING,
     UPLOADED,
-    ENCODING,
+    ENCODED,
     READY,
     FAILED
 }

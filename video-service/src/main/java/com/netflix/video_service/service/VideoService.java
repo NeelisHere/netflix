@@ -27,7 +27,7 @@ public class VideoService {
 
     public String uploadVideo(UUID movieId, MultipartFile file) {
         log.info("movie: {}, file: {} received", movieId, file.getOriginalFilename());
-        // key=raw/movie123/08a7sdf09a8sd7f0a9s8d7_uploadedFileName.mp4
+        // key=raw/movie123/xxxx-xxxxx-xxxx-xxxxx_uploadedFileName.mp4
         String videoKey = "raw/" + movieId + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
 
         s3Service.uploadToS3(videoKey, file);

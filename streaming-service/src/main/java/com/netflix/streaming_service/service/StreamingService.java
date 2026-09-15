@@ -45,10 +45,8 @@ public class StreamingService {
                     "masterPlaylistKey not found, movie not ready for streaming"
             );
         }
-
         String preSignedMasterPlaylistUrl = s3Service.generatePreSignedUrl(masterPlaylistKey);
-        redisTemplate.opsForValue()
-                .set(streamingUrlCacheKey, preSignedMasterPlaylistUrl, 55, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(streamingUrlCacheKey, preSignedMasterPlaylistUrl, 55, TimeUnit.MINUTES);
         log.info("streaming url cached for movieId: {} for 55 mins", movieId);
         return StreamingResponse.builder()
                 .movieId(movieId)
@@ -60,12 +58,41 @@ public class StreamingService {
 
     public String getSignedPlaylist(UUID movieId, String playlistPath) {
         log.info("getting signed playlist - movieId: {}, playlistPath: {}", movieId, playlistPath);
+        /*
+        * playlistPath = encoded/movieId/1080p/playlist.m3u8
+        * basePath = encoded/movieId/1080p/
+        * */
         String basePath = playlistPath.substring(0, playlistPath.lastIndexOf("/") + 1);
         String m3u8Content = s3Service.readFromS3(playlistPath);
         return rewriteM3u8WithSignedUrls(m3u8Content, basePath);
     }
-
+    /*
+    #EXTM3U
+    #EXT-X-VERSION:3
+    #EXT-X-TARGETDURATION:6
+    #EXTINF:6.000,
+    segment000.ts
+    #EXTINF:6.000,
+    segment001.ts
+    #EXTINF:6.000,
+    segment002.ts
+    *
+    * replace this with signed urls
+    *
+    #EXTM3U
+    #EXT-X-VERSION:3
+    #EXT-X-TARGETDURATION:6
+    #EXTINF:6.000,
+    https://<aws-s3-domain>/encoded/movieId/1080p/segment000.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
+    #EXTINF:6.000,
+    https://<aws-s3-domain>/encoded/movieId/1080p/segment001.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
+    #EXTINF:6.000,
+    https://<aws-s3-domain>/encoded/movieId/1080p/segment002.ts?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
+    * */
     private String rewriteM3u8WithSignedUrls(String m3u8Content, String basePath) {
+        /*
+         * basePath = encoded/movieId/1080p/
+         * */
         StringBuilder rewritten = new StringBuilder();
         for(String line : m3u8Content.split("\n")) {
             line = line.trim();
@@ -73,6 +100,10 @@ public class StreamingService {
                 rewritten.append(line).append('\n');
                 continue;
             }
+            /*
+             * basePath = encoded/movieId/1080p/
+             * fullKey = encoded/movieId/1080p/segment001.ts
+             * */
             String fullKey = basePath + line;
             String signedUrl = s3Service.generatePreSignedUrl(fullKey);
             rewritten.append(signedUrl).append('\n');

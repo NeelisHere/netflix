@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /*****************************
+ tempDir=C:/temp/encoding
 jobDir=C:/temp/encoding/abc123/
 
 C:/temp/encoding/abc123/
@@ -49,17 +50,13 @@ C:/temp/encoding/abc123/
 @Service
 @RequiredArgsConstructor
 public class EncodingService {
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
-
-    @Value("${ffmpeg.path}")
-    private String ffmpegPath;
 
     @Value("${encoding.temp-dir}")
     private String tempDir;
 
     private final KafkaTemplate<String, VideoEncodeEvent> kafkaVideoEncodeTemplate;
     private final FilesAndDirectoryService filesAndDirectoryService;
+    private final FfmpegService ffmpegService;
     private final S3Service s3Service;
 
     public void encodeVideo(VideoUploadEvent videoUploadEvent) {
@@ -77,85 +74,42 @@ public class EncodingService {
             for (VideoQuality videoQuality : VideoUtils.VIDEO_QUALITIES) {
                 String qualityDir = jobDir + "/encoded/" + videoQuality.height() + "p";
                 Files.createDirectories(Paths.get(qualityDir));
-                encodeToHls(rawVideoFilePath, qualityDir, videoQuality);
+                ffmpegService.encodeToHls(rawVideoFilePath, qualityDir, videoQuality);
             }
 
             // generate master playlist
             String masterPlaylistPath = jobDir + "/encoded/master.m3u8";
-            filesAndDirectoryService.generateMasterPlaylist(masterPlaylistPath);
+            ffmpegService.generateMasterPlaylist(masterPlaylistPath);
 
             // Upload all encoded files to S3
             String prefix = "encoded/" + videoUploadEvent.getMovieId() + "/";
-            s3Service.uploadEncodedFilesToS3(jobDir + "/encoded", prefix);
+            String localDir = jobDir + "/encoded";
+            filesAndDirectoryService.uploadEncodedFilesToS3(localDir, prefix);
 
             // Publish VideoEncodedEvent
             String masterPlaylistKey = prefix + "master.m3u8";
-            String hlsUrl = "https://" + bucketName + ".s3.amazonaws.com/" + masterPlaylistKey;
-            VideoEncodeEvent encodeEvent = VideoEncodeEvent.builder()
+            String hlsUrl = s3Service.getHlsS3Url(masterPlaylistKey);
+            VideoEncodeEvent videoEncodeEvent = VideoEncodeEvent.builder()
                     .movieId(videoUploadEvent.getMovieId())
                     .hlsUrl(hlsUrl)
                     .masterPlaylistKey(masterPlaylistKey)
                     .success(true)
                     .errorMessage(null)
                     .build();
-            kafkaVideoEncodeTemplate.sendDefault(String.valueOf(videoUploadEvent.getMovieId()), encodeEvent)
-                    .whenComplete((result, e) -> {
-                        if (e != null) {
-                            log.error("Failed to publish video upload event: {}", e.getMessage());
-                        } else {
-                            RecordMetadata metadata = result.getRecordMetadata();
-                            log.info("Message published to topic={}, partition={}, offset={}",
-                                    metadata.topic(),
-                                    metadata.partition(),
-                                    metadata.offset()
-                            );
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            kafkaVideoEncodeTemplate.sendDefault(String.valueOf(videoUploadEvent.getMovieId()), videoEncodeEvent);
+            log.info("VideoEncodeEvent published: {}", videoEncodeEvent);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            VideoEncodeEvent videoEncodeEvent = VideoEncodeEvent.builder()
+                    .movieId(videoUploadEvent.getMovieId())
+                    .hlsUrl(null)
+                    .masterPlaylistKey(null)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .build();
+            kafkaVideoEncodeTemplate.sendDefault(String.valueOf(videoUploadEvent.getMovieId()), videoEncodeEvent);
         } finally {
             filesAndDirectoryService.cleanupJobDirectory(jobDir);
         }
-    }
-
-    public void encodeToHls(String inputPath, String outputPath, VideoQuality videoQuality) {
-        log.info("Encoding to HLS...");
-        List<String> command = createFfmpegCommandForHlsEncoding(inputPath, outputPath, videoQuality);
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
-        pb.inheritIO();
-        try {
-            Process process = pb.start();
-            int exit_code = process.waitFor();
-            if (exit_code != 0) {
-                String message = String.format("ffmpeg encoding filed with exit_code=%s", exit_code);
-                throw new CommonException(HttpStatus.INTERNAL_SERVER_ERROR, message);
-            }
-            log.info("Encoded {}p successfully!", videoQuality.height());
-        } catch (IOException | InterruptedException e) {
-            log.info("encoding failed, reason: {}", e.getMessage());
-            throw new CommonException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-    }
-
-    public List<String> createFfmpegCommandForHlsEncoding(
-            String inputPath, String outputPath, VideoQuality videoQuality) {
-
-        String playlistPath = outputPath + "/playlist.m3u8";
-        String segmentPattern = outputPath + "/segment_%03d.ts";
-        return Arrays.asList(
-                ffmpegPath,
-                "-i", inputPath,
-                "-vf", "scale=" + videoQuality.width() + ":" + videoQuality.height(),
-                "-c:v", "libx264",
-                "-b:v", videoQuality.bitrate() + "k",
-                "-c:a", "aac",
-                "-b:a", "128k",
-                "-hls_time", "10",
-                "-hls_list_size", "0",
-                "-hls_segment_filename", segmentPattern,
-                "-f", "hls",
-                playlistPath
-        );
     }
 }

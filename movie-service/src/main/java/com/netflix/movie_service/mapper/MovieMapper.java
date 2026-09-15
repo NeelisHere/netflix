@@ -1,5 +1,6 @@
 package com.netflix.movie_service.mapper;
 
+import com.netflix.common_lib.dto.VideoStatus;
 import com.netflix.common_lib.dto.request.MovieRequest;
 import com.netflix.common_lib.dto.response.MovieResponse;
 import com.netflix.movie_service.entity.Movie;
@@ -24,6 +25,7 @@ public class MovieMapper {
                 .title(movieRequest.getTitle())
                 .durationMinutes(movieRequest.getDurationMinutes())
                 .genre(movieRequest.getGenre())
+                .videoStatus(VideoStatus.PENDING)
                 .build();
     }
 }

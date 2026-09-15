@@ -3,6 +3,7 @@ package com.netflix.integration_tests;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
+@Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class MovieServiceTests {
 
@@ -22,6 +24,7 @@ public class MovieServiceTests {
     static void setUp() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 8081;
+        RestAssured.basePath = "/api/v1/movies";
     }
 
     private String createMovieJson(String title, int durationMinutes, String genre) {
@@ -43,7 +46,7 @@ public class MovieServiceTests {
                 .contentType(ContentType.JSON)
                 .body(requestBody)
         .when()
-                .post("/api/v1/movies")
+                .post()
         .then()
                 .statusCode(201)
                 .body("id", notNullValue())
@@ -58,11 +61,13 @@ public class MovieServiceTests {
     @Test
     @Order(2)
     void getMovieById_shouldReturn200WithCorrectId() {
-        given()
+        log.info("createdMovieId: {}", createdMovieId);
+        var resp = given()
         .when()
-                .get("/api/v1/movies/{id}", createdMovieId)
+                .get("/{movieId}", createdMovieId)
         .then()
                 .statusCode(200);
+        log.info("resp: {}", resp);
     }
 
     @Test
@@ -70,7 +75,7 @@ public class MovieServiceTests {
     void getMovieById_shouldReturn404WithWrongId() {
         given()
         .when()
-                .get("/api/v1/movies/{movieId}", wrongMovieId)
+                .get("/{movieId}", wrongMovieId)
         .then()
                 .statusCode(404);
     }
@@ -84,14 +89,14 @@ public class MovieServiceTests {
                 .contentType(ContentType.JSON)
                 .body(updateBody)
         .when()
-                .put("/api/v1/movies/{movieId}", createdMovieId)
+                .put("/{movieId}", createdMovieId)
         .then()
                 .statusCode(200)
                 .body("durationMinutes", equalTo(200));
 
         given()
         .when()
-                .get("/api/v1/movies/{movieId}", createdMovieId)
+                .get("/{movieId}", createdMovieId)
         .then()
                 .statusCode(200)
                 .body("durationMinutes", equalTo(200));
@@ -106,7 +111,7 @@ public class MovieServiceTests {
                 .contentType(ContentType.JSON)
                 .body(updateBody)
         .when()
-                .put("/api/v1/movies/{movieId}", wrongMovieId)
+                .put("/{movieId}", wrongMovieId)
         .then()
                 .statusCode(404);
     }
@@ -116,7 +121,7 @@ public class MovieServiceTests {
     void deleteMovie_shouldReturn200WithCorrectId() {
         given()
         .when()
-                .delete("/api/v1/movies/{movieId}", createdMovieId)
+                .delete("/{movieId}", createdMovieId)
         .then()
                 .statusCode(200);
     }
@@ -126,7 +131,7 @@ public class MovieServiceTests {
     void deleteMovie_shouldReturn404WhenAlreadyDeleted() {
         given()
         .when()
-                .delete("/api/v1/movies/{movieId}", createdMovieId)
+                .delete("/{movieId}", createdMovieId)
         .then()
                 .statusCode(404);
     }
@@ -134,20 +139,36 @@ public class MovieServiceTests {
     @Test
     @Order(8)
     void searchByGenre_shouldReturn200AndListOfSize3() {
-        String id1 = given().contentType(ContentType.JSON).body(createMovieJson("The Dark Knight", 152, "ACTION")).when().post("/api/v1/movies").jsonPath().getString("id");
-        String id2 = given().contentType(ContentType.JSON).body(createMovieJson("Mad Max: Fury Road", 120, "ACTION")).when().post("/api/v1/movies").jsonPath().getString("id");
-        String id3 = given().contentType(ContentType.JSON).body(createMovieJson("John Wick", 101, "ACTION")).when().post("/api/v1/movies").jsonPath().getString("id");
+        String id1 = given()
+                .contentType(ContentType.JSON)
+                .body(createMovieJson("The Dark Knight", 152, "ACTION"))
+                .when()
+                .post().jsonPath().getString("id");
+
+        String id2 = given()
+                .contentType(ContentType.JSON)
+                .body(createMovieJson("Mad Max: Fury Road", 120, "ACTION"))
+                .when()
+                .post().jsonPath().getString("id");
+
+        String id3 = given()
+                .contentType(ContentType.JSON)
+                .body(createMovieJson("John Wick", 101, "ACTION"))
+                .when()
+                .post().jsonPath().getString("id");
+
+        log.info("{}\n{}\n{}\n", id1, id2, id3);
 
         given()
                 .queryParam("genre", "ACTION")
         .when()
-                .get("/api/v1/movies/search")
+                .get("/search")
         .then()
                 .statusCode(200)
                 .body("$", hasSize(3));
 
-        given().when().delete("/api/v1/movies/{movieId}", id1);
-        given().when().delete("/api/v1/movies/{movieId}", id2);
-        given().when().delete("/api/v1/movies/{movieId}", id3);
+        given().when().delete("/{movieId}", id1);
+        given().when().delete("/{movieId}", id2);
+        given().when().delete("/{movieId}", id3);
     }
 }

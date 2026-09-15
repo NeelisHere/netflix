@@ -22,7 +22,7 @@ public class S3Service {
     private final S3Client s3Client;
 
     public void uploadToS3(String videoKey, MultipartFile file) {
-        log.info("Uploading to S3 with key: {}", videoKey);
+        log.info("Uploading to S3 with key: {}...", videoKey);
         try {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -32,8 +32,8 @@ public class S3Service {
                     .build();
             RequestBody requestBody = RequestBody.fromInputStream(file.getInputStream(), file.getSize());
             s3Client.putObject(putObjectRequest, requestBody);
-            log.info("Uploading to S3 with key: {}", videoKey);
-        } catch (IOException e) {
+            log.info("Uploaded to S3 with key: {} successfully!", videoKey);
+        } catch (Exception e) {
             log.info("failed to upload: {}", e.getMessage());
             throw new CommonException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }

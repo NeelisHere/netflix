@@ -1,41 +1,30 @@
 package com.netflix.integration_tests;
 
-
 import io.restassured.RestAssured;
-import io.restassured.config.HttpClientConfig;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.*;
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class VideoServiceTests {
-    public static final String SMALL_VIDEO_FILE = "1.5mb.mp4";
-    public static final String LARGE_VIDEO_FILE = "3mb.mp4";
-    public static final String VALID_USER_ID = "f379b400-9271-4c41-a337-147a9e3fdf3b";
+    public static final String SMALL_VIDEO_FILE = "test_file_3mb.mp4";
+    public static final String LARGE_VIDEO_FILE = "test_file_8.5mb.mp4";
+    public static final String VALID_MOVIE_ID = "479ca164-fb4c-49ee-8112-e09d776be9ea";
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = "http://localhost/api/v1/video";
+        RestAssured.baseURI = "http://localhost";
         RestAssured.port = 8082;
+        RestAssured.basePath = "/api/v1/video";
     }
 
     private File getResourceFile(String fileName) {
-        return new File("D:\\IdeaProjects\\netflix\\test_mp4_files\\" + fileName);
+        return new File("C:\\Users\\NeelabhPaul\\Desktop\\netflix\\test-files\\" + fileName);
     }
 
     @Test
@@ -48,7 +37,7 @@ public class VideoServiceTests {
                 .multiPart("file", file)
                 .contentType(ContentType.MULTIPART)
                 .when()
-                .post("/upload/{movieId}", VALID_USER_ID)
+                .post("/upload/{movieId}", VALID_MOVIE_ID)
                 .then()
                 .log().all()
                 .statusCode(200)
@@ -58,20 +47,31 @@ public class VideoServiceTests {
 
     @Test
     @Order(2)
-    void shouldRejectVideoLargerThan2MB() throws IOException {
+    void getMovieById_shouldReturn200WithVideoStatusUploaded() throws InterruptedException {
+        Thread.sleep(20_000);
+
+        given()
+                .baseUri("http://localhost")
+                .port(8081)
+                .basePath("/api/v1/movies")
+        .when()
+                .get("/{movieId}", VALID_MOVIE_ID)
+        .then()
+                .statusCode(200)
+                .body("videoStatus", equalTo("UPLOADED"));
+    }
+
+    @Test
+    @Order(3)
+    void shouldRejectVideoLargerThan3MB() throws IOException {
 
         File file = getResourceFile(LARGE_VIDEO_FILE);
 
         given()
-                .multiPart(
-                        "file",
-                        file.getName(),
-                        Files.readAllBytes(file.toPath()),
-                        "video/mp4"
-                )
+                .multiPart("file", file)
                 .contentType(ContentType.MULTIPART)
                 .when()
-                .post("/upload/{movieId}", VALID_USER_ID)
+                .post("/upload/{movieId}", VALID_MOVIE_ID)
                 .then()
                 .log().all()
                 .statusCode(413)

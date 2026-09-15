@@ -16,10 +16,7 @@ import org.springframework.stereotype.Service;
 public class VideoEncodeEventConsumer {
     private final StringRedisTemplate redisTemplate;
 
-    @KafkaListener(
-            topics = KafkaTopics.VIDEO_ENCODE_TOPIC,
-            groupId = "${spring.kafka.consumer.group}"
-    )
+    @KafkaListener(topics = KafkaTopics.VIDEO_ENCODE_TOPIC, groupId = "${spring.kafka.consumer.group}")
     public void videoEncodeEventConsumer(VideoEncodeEvent videoEncodeEvent) {
         log.info("Consumed VideoEncodeEvent: {}", videoEncodeEvent);
         if (videoEncodeEvent.isSuccess()) {
@@ -31,7 +28,7 @@ public class VideoEncodeEventConsumer {
                     videoEncodeEvent.getMasterPlaylistKey()
             );
         } else {
-            log.info("encoding failed for the event: {}", videoEncodeEvent.getErrorMessage());
+            log.info("VideoEncodeEvent failed to process!");
         }
     }
 }

@@ -22,6 +22,14 @@ public class S3Service {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
+    @Value("${aws.region}")
+    private String region;
+
+    public String getHlsS3Url(String masterPlaylistKey) {
+        // https://<bucket-name>.s3.<region>.amazonaws.com/<masterPlaylistKey>
+        return "https://" + bucketName + ".s3." + region + ".amazonaws.com/" + masterPlaylistKey;
+    }
+
     public GetObjectRequest buildDownloadRequest(String s3Key) {
         return GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -40,37 +48,12 @@ public class S3Service {
     public void downloadFileFromS3(String s3Key, String localDestinationPath) {
         GetObjectRequest request = buildDownloadRequest(s3Key);
         s3Client.getObject(request, Paths.get(localDestinationPath));
-
         log.info("Raw video file downloaded from S3 to local path: {}", localDestinationPath);
     }
 
-    public void uploadEncodedFilesToS3(String localDir, String prefix) {
-        File dir = new File(localDir);
-        uploadDirectoryRecursivelyToS3(dir, localDir, prefix);
-    }
-
-    public void uploadDirectoryRecursivelyToS3(File dir, String localDir, String prefix) {
-        for (File currentPath : Objects.requireNonNull(dir.listFiles())) {
-            if (currentPath.isDirectory()) {
-                uploadDirectoryRecursivelyToS3(currentPath, localDir, prefix);
-            } else {
-                /*
-                * C:\temp\encoding\abc123\encoded\1080p\playlist.m3u8 -> 1080p/playlist.m3u8
-                * */
-                String relativePath = currentPath.getAbsolutePath()
-                        .substring(localDir.length() + 1)
-                        .replace("\\", "/");
-                /*
-                * 1080p/playlist.m3u8 -> encoded/movie123/1080p/playlist.m3u8
-                * */
-                String s3Key = prefix + relativePath;
-                String contentType = currentPath.getName().endsWith(".m3u8")
-                        ? "application/x-mpegURL"
-                        : "video/MP2T";
-                PutObjectRequest request = buildUploadRequest(s3Key, contentType);
-                s3Client.putObject(request, RequestBody.fromFile(currentPath));
-                log.info("All encoded files uploaded to S3: {}", s3Key);
-            }
-        }
+    public void uploadToS3(String s3Key, String contentType, File currentPath) {
+        PutObjectRequest request = buildUploadRequest(s3Key, contentType);
+        s3Client.putObject(request, RequestBody.fromFile(currentPath));
+        log.info("file: {} uploaded to S3.", currentPath);
     }
 }

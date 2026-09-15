@@ -26,7 +26,7 @@ public class StreamingController {
     }
 
     /*
-    * GET /api/v1/stream/{movieId}/playlist?path=encoded/movieId/1080p/playlist.m3u8
+    * GET /api/v1/streaming/{movieId}/playlist?path=encoded/movieId/1080p/playlist.m3u8
     * */
     @GetMapping(path = "/{movieId}/playlist")
     public ResponseEntity<String> getSignedPlaylist(
